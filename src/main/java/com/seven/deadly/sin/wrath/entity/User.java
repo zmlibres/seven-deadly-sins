@@ -4,7 +4,10 @@ package com.seven.deadly.sin.wrath.entity;
 import com.seven.deadly.sin.wrath.dto.common.enums.Status;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import java.util.Date;
 import java.util.UUID;
 
 @Getter
@@ -31,11 +34,23 @@ public class User {
 
     private int age;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Status status;
 
-    private UUID getRandomUUID() {
-        return UUID.randomUUID();
-    }
+    @Column(name = "created_by")
+    private String createdBy;
+
+    @CreationTimestamp
+    @Column(name = "created_date")
+    private Date createdDate;
+
+    @Column(name = "updated_by")
+    private String updatedBy;
+
+    @UpdateTimestamp
+    @Column(name = "updated_date")
+    private Date updatedDate;
 
 
 }
