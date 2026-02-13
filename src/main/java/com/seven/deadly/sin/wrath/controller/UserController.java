@@ -9,6 +9,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 
 
 @RestController
@@ -35,10 +39,15 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<?> saveUser(@RequestBody UserDTO request) {
-        userService.saveUser(request);
+    public ResponseEntity<?> saveUser(@RequestBody UserDTO request) throws URISyntaxException {
+        String id = userService.saveUser(request);
 
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
+                                             .path("/{id}")
+                                             .buildAndExpand(id)
+                                             .toUri();
+
+        return ResponseEntity.created(uri).build();
     }
 
     @PutMapping("/{id}")
