@@ -2,6 +2,7 @@ package com.seven.deadly.sin.wrath.dto.common;
 
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Getter

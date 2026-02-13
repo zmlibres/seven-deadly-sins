@@ -5,14 +5,19 @@ import com.seven.deadly.sin.wrath.dto.common.enums.Status;
 import com.seven.deadly.sin.wrath.dto.request.UserDTO;
 import com.seven.deadly.sin.wrath.dto.response.UserResultDTO;
 import com.seven.deadly.sin.wrath.entity.User;
+import com.seven.deadly.sin.wrath.exception.ResourceExistException;
 import com.seven.deadly.sin.wrath.exception.ResourceNotFoundException;
 import com.seven.deadly.sin.wrath.repository.UserRepository;
 import com.seven.deadly.sin.wrath.service.UserService;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -24,25 +29,47 @@ public class UserServiceImpl implements UserService {
         this.userRepository = userRepository;
     }
 
+    @Cacheable(value = "users",
+            key = "'page:' + #pageable.pageNumber + ':size:' + #pageable.pageSize + ':sort:' + #pageable.sort.toString().replace(' ', '')"
+    )
+    @Override
+    public PageResponseDTO<UserResultDTO> getAllUser(Pageable pageable) {
+
+        Page<User> users = userRepository.findAllByStatus(Status.ACTIVE, pageable);
+
+        List<UserResultDTO> usersContent = users.getContent()
+                .stream()
+                .map(UserServiceImpl::buildUserDTO)
+                .toList();
+
+        return PageResponseDTO.<UserResultDTO>builder()
+                .content(usersContent)
+                .page(users.getNumber())
+                .size(users.getSize())
+                .totalPages(users.getTotalPages())
+                .totalElements(users.getTotalElements())
+                .build();
+    }
+
+
+    @Cacheable(value = "user", key = "#id")
     @Override
     public UserResultDTO getUserById(String id) {
 
-        User user = userRepository.findUserByUserId(id)
-                .orElseThrow(() -> new ResourceNotFoundException("user not found."));
+        User user = getUserByUserId(id).orElseThrow(() ->
+                new ResourceNotFoundException("user not found.")
+        );
 
-        return UserResultDTO.builder()
-                            .id(user.getUserId())
-                            .name(user.getName())
-                            .age(user.getAge())
-                            .username(user.getUsername())
-                            .alias(user.getAlias())
-                            .status(user.getStatus())
-                            .build();
-
+        return buildUserDTO(user);
     }
 
+    @CacheEvict(value = "users", allEntries = true)
     @Override
     public void saveUser(UserDTO request) {
+
+        getUserByUsername(request.getUsername()).ifPresent(u -> {
+            throw new ResourceExistException("username already exist.");
+        });
 
         userRepository.save(User.builder()
                                 .userId(UUID.randomUUID().toString())
@@ -54,20 +81,57 @@ public class UserServiceImpl implements UserService {
                                 .build());
     }
 
+
+    @CachePut(value = "user", key = "#id")
+    @CacheEvict(value = "users", allEntries = true)
     @Override
-    public PageResponseDTO<UserResultDTO> getAllUser(Pageable pageable) {
+    public UserResultDTO putUser(String id, UserDTO request) {
 
-        Page<User> page = userRepository.findAll(pageable);
+        User currentUser = getUserByUserId(id).orElseThrow(() ->
+                new ResourceNotFoundException("user not found.")
+        );
 
-        List<UserResultDTO> content = page.getContent().stream().map(UserResultDTO::from).toList();
+        currentUser.setName(request.getName());
+        currentUser.setAge(request.getAge());
+        currentUser.setAlias(request.getAlias());
 
-        return PageResponseDTO.<UserResultDTO>builder()
-                .content(content)
-                .page(page.getNumber())
-                .size(page.getSize())
-                .totalPages(page.getTotalPages())
-                .totalElements(page.getTotalElements())
-                .build();
+        User user = userRepository.save(currentUser);
 
+        return buildUserDTO(user);
+    }
+
+    @CacheEvict(value = {"user", "users"}, allEntries = true)
+    @Override
+    public void deleteUser(String id) {
+        User user = getUserByUserId(id).orElseThrow(() ->
+                new ResourceNotFoundException("user not found.")
+        );
+
+        user.setStatus(Status.INACTIVE);
+
+        userRepository.save(user);
+    }
+
+    public Optional<User> getUserByUserId(String id) {
+        return userRepository.findUserByUserId(id);
+    }
+
+    public Optional<User> getUserByUsername(String username) {
+        return userRepository.findUserByUsername(username);
+    }
+
+    private static UserResultDTO buildUserDTO(User user) {
+        return UserResultDTO.builder()
+                            .id(user.getUserId())
+                            .name(user.getName())
+                            .age(user.getAge())
+                            .username(user.getUsername())
+                            .alias(user.getAlias())
+                            .status(user.getStatus())
+                            .createdBy(user.getCreatedBy())
+                            .createdDate(user.getCreatedDate())
+                            .updatedBy(user.getUpdatedBy())
+                            .updatedDate(user.getUpdatedDate())
+                            .build();
     }
 }

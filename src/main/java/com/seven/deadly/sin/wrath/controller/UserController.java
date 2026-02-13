@@ -7,17 +7,23 @@ import com.seven.deadly.sin.wrath.service.UserService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.*;
 
 
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/v1/user")
 public class UserController {
 
     private final UserService userService;
 
     public UserController(UserService userService) {
         this.userService = userService;
+    }
+
+    @GetMapping
+    public ResponseEntity<PageResponseDTO<UserResultDTO>> getAllUser(Pageable pageable) {
+        return ResponseEntity.ok(userService.getAllUser(pageable));
     }
 
     @GetMapping("/{id}")
@@ -30,16 +36,22 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<?> saveUser(@RequestBody UserDTO request) {
-
         userService.saveUser(request);
 
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
-    @GetMapping
-    public ResponseEntity<PageResponseDTO<UserResultDTO>> getAllUser(Pageable pageable) {
+    @PutMapping("/{id}")
+    public ResponseEntity<UserResultDTO> updateUser(@PathVariable("id") String id, UserDTO request) {
 
-        return ResponseEntity.ok(userService.getAllUser(pageable));
+        return new ResponseEntity<>(userService.putUser(id, request), HttpStatus.OK);
+    }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable("id") String id) {
+
+        userService.deleteUser(id);
+
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }

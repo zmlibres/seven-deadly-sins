@@ -1,6 +1,7 @@
 package com.seven.deadly.sin.wrath.dto.request;
 
 
+import com.seven.deadly.sin.wrath.dto.common.enums.AccountStatus;
 import lombok.*;
 
 @Getter
