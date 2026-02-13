@@ -65,20 +65,24 @@ public class UserServiceImpl implements UserService {
 
     @CacheEvict(value = "users", allEntries = true)
     @Override
-    public void saveUser(UserDTO request) {
+    public String saveUser(UserDTO request) {
 
         getUserByUsername(request.getUsername()).ifPresent(u -> {
             throw new ResourceExistException("username already exist.");
         });
 
+        String id = UUID.randomUUID().toString();
+
         userRepository.save(User.builder()
-                                .userId(UUID.randomUUID().toString())
+                                .userId(id)
                                 .username(request.getUsername())
                                 .name(request.getName())
                                 .alias(request.getAlias())
                                 .age(request.getAge())
                                 .status(Status.ACTIVE)
                                 .build());
+
+        return id;
     }
 
 

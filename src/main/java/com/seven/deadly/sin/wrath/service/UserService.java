@@ -9,7 +9,7 @@ public interface UserService {
 
     UserResultDTO getUserById(String id);
 
-    void saveUser(UserDTO request);
+    String saveUser(UserDTO request);
 
     PageResponseDTO<UserResultDTO> getAllUser(Pageable pageable);
 
