@@ -22,11 +22,8 @@ public class OutboundLoggingInterceptor implements ClientHttpRequestInterceptor 
 
         long start = System.currentTimeMillis();
 
-        log.info("OUTBOUND_REQUEST traceId={} method={} uri={} body={}",
-                traceId,
-                request.getMethod(),
-                request.getURI(),
-                LoggingUtil.mask(new String(body)));
+        log.info("OUTBOUND_REQUEST traceId={} method={} uri={} body={}", traceId, request.getMethod(),
+                request.getURI(), LoggingUtil.mask(new String(body)));
 
         // propagate traceId
         request.getHeaders().add("X-Trace-Id", traceId);
@@ -37,11 +34,9 @@ public class OutboundLoggingInterceptor implements ClientHttpRequestInterceptor 
 
         String responseBody = new String(response.getBody().readAllBytes(), StandardCharsets.UTF_8);
 
-        log.info("OUTBOUND_RESPONSE traceId={} status={} duration={}ms body={}",
-                traceId,
-                response.getStatusCode(),
-                duration,
-                LoggingUtil.mask(responseBody));
+        log.info("OUTBOUND_RESPONSE traceId={} status={} duration={}ms body={}", traceId,
+                response.getStatusCode(), duration, LoggingUtil.mask(responseBody)
+        );
 
         return response;
     }
